@@ -1,4 +1,3 @@
-// server/services/schedulerService.js
 const cron = require('node-cron');
 const User = require('../models/User');
 const Schedule = require('../models/Schedule');
@@ -8,14 +7,14 @@ const { determineWeekType, getDayName, getTomorrowInfo } = require('../utils/sch
 // Bütün bildiriş planlaşdırıcılarını başlatmaq
 const initSchedulers = () => {
   // Hər gün axşam 20:00-da sabahkı dərs cədvəli haqqında bildiriş
-  cron.schedule('35 22 * * *', async () => {
+  cron.schedule('18 00 * * *', async () => {
     try {
       console.log('Running evening notification job...');
       
       const { date, dayName, weekType } = getTomorrowInfo();
       
       // Əgər həftə sonudursa, bildiriş göndərmirik
-      if (date.getDay() === 0 ) {
+      if (date.getDay() === 1) {
         console.log('Tomorrow is weekend, skipping notifications');
         return;
       }
@@ -30,10 +29,15 @@ const initSchedulers = () => {
       
       // Bütün istifadəçiləri tapırıq
       const users = await User.find();
-      const tokens = users.map(user => user.deviceToken);
+      const recipients = users
+        .filter(user => user.deviceToken || user.email) // Yalnız token və ya email olanları seçirik
+        .map(user => ({
+          token: user.deviceToken || null,
+          email: user.email || null,
+        }));
       
-      if (tokens.length === 0) {
-        console.log('No users found for sending notifications');
+      if (recipients.length === 0) {
+        console.log('No valid users found for sending notifications');
         return;
       }
       
@@ -47,7 +51,7 @@ const initSchedulers = () => {
         
         // İlk 2 dərsin məlumatlarını əlavə et
         schedule.lessons.slice(0, 2).forEach((lesson, index) => {
-          lessonDetails += `${index+1}. ${lesson.time} - ${lesson.subject} (${lesson.room})\n`;
+          lessonDetails += `${index + 1}. ${lesson.time} - ${lesson.subject} (${lesson.room})\n`;
         });
         
         if (lessonCount > 2) {
@@ -57,12 +61,12 @@ const initSchedulers = () => {
       
       // Bildiriş göndəririk
       await sendMulticastNotification(
-        tokens,
+        recipients,
         `Sabahkı Dərs Cədvəli - ${dayName}`,
         `${dayName} (${weekType} həftə) ${lessonCount} dərsiniz var. İlk dərs: ${firstLessonTime}\n\n${lessonDetails}`
       );
       
-      console.log(`Evening notification sent to ${tokens.length} users`);
+      console.log(`Evening notification sent to ${recipients.length} users`);
     } catch (error) {
       console.error('Error in evening notification job:', error);
     }
@@ -115,21 +119,26 @@ const initSchedulers = () => {
       
       // Bütün istifadəçiləri tapırıq
       const users = await User.find();
-      const tokens = users.map(user => user.deviceToken);
+      const recipients = users
+        .filter(user => user.deviceToken || user.email)
+        .map(user => ({
+          token: user.deviceToken || null,
+          email: user.email || null,
+        }));
       
-      if (tokens.length === 0) {
+      if (recipients.length === 0) {
         return;
       }
       
       // Hər dərs üçün bildiriş göndəririk
       for (const lesson of upcomingLessons) {
         await sendMulticastNotification(
-          tokens,
+          recipients,
           `Dərs Başlayır: ${lesson.subject}`,
           `${lesson.time} - ${lesson.subject} dərsi 15 dəqiqə sonra başlayır.\nMüəllim: ${lesson.teacher}\nOtaq: ${lesson.room}`
         );
         
-        console.log(`Lesson reminder sent for ${lesson.subject} to ${tokens.length} users`);
+        console.log(`Lesson reminder sent for ${lesson.subject} to ${recipients.length} users`);
       }
     } catch (error) {
       console.error('Error in lesson reminder job:', error);
@@ -140,5 +149,5 @@ const initSchedulers = () => {
 };
 
 module.exports = {
-  initSchedulers
+  initSchedulers,
 };

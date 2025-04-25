@@ -13,7 +13,7 @@ const UserSchema = new mongoose.Schema({
   },
   deviceToken: {
     type: String,
-    required: true
+    deviceToken: { type: String, required: false }, // İsteğe bağlı etdik
   },
   createdAt: {
     type: Date,
