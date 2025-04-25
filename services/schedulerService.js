@@ -7,7 +7,7 @@ const { determineWeekType, getDayName, getTomorrowInfo } = require('../utils/sch
 // Bütün bildiriş planlaşdırıcılarını başlatmaq
 const initSchedulers = () => {
   // Hər gün axşam 20:00-da sabahkı dərs cədvəli haqqında bildiriş
-  cron.schedule('00 01 * * *', async () => {
+  cron.schedule('09 01 * * *', async () => {
     try {
       console.log('Running evening notification job...');
       
