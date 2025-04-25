@@ -1,10 +1,18 @@
 // server/services/notificationService.js
 const admin = require('firebase-admin');
-const serviceAccount = require('../config/firebase-credentials.json');
+const dotenv = require('dotenv');
+
+// .env faylını yüklə
+dotenv.config();
+
+// FIREBASE_CREDENTIALS_BASE64 dəyişənindən konfiqurasiya məlumatlarını al
+const firebaseCredentials = JSON.parse(
+  Buffer.from(process.env.FIREBASE_CREDENTIALS_BASE64, 'base64').toString('utf-8')
+);
 
 // Firebase-i inicializasiya et
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(firebaseCredentials),
 });
 
 /**
@@ -19,12 +27,12 @@ const sendNotification = async (token, title, body, data = {}) => {
     const message = {
       notification: {
         title,
-        body
+        body,
       },
       data,
-      token
+      token,
     };
-    
+
     const response = await admin.messaging().send(message);
     console.log(`Notification sent successfully to ${token}:`, response);
     return response;
@@ -78,5 +86,5 @@ const sendMulticastNotification = async (tokens, title, body, data = {}) => {
 
 module.exports = {
   sendNotification,
-  sendMulticastNotification
+  sendMulticastNotification,
 };
