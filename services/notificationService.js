@@ -17,11 +17,13 @@ admin.initializeApp({
 
 // Configure nodemailer for email transport
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // 465 port üçün secure true olmalıdır
   auth: {
-    user: process.env.EMAIL_USER, 
+    user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
-  },
+  },
 });
 
 /**
